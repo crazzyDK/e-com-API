@@ -1,5 +1,5 @@
 import express from "express";
-import { getUserById, getAllUser, userLogin, userRegister, deleteUser, updateUser, refreshToken, userLogout } from "../controller/User.controller.js";
+import { getUserById, getAllUser, userLogin, userRegister, deleteUser, updateUser, refreshToken, userLogout, userReqPassword, updatePassword } from "../controller/User.controller.js";
 import { authMiddleware, blockUser, isAdmin, unblockUser } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -14,5 +14,7 @@ router.put('/block-user/:id', authMiddleware, isAdmin, blockUser);
 router.put('/unblock-user/:id', authMiddleware, isAdmin, unblockUser);
 router.get('/refresh-token', refreshToken);
 router.get('/logout', userLogout);
-
+router.post('/reset-request-password', userReqPassword);
+router.post('/reset-password/:userId/:token', updatePassword);
 export default router;
+

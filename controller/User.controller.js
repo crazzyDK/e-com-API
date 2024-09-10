@@ -1,10 +1,12 @@
 import User from '../models/User.model.js';
 import asyncHandler from 'express-async-handler';
 import bcrypt from 'bcrypt';
-import { generateToken } from '../utils/generateToken.js';
+import nodemailer from 'nodemailer';
+import { generateReqToken, generateToken } from '../utils/generateToken.js';
 import { validatemongoID } from '../utils/validatemongoID.js';
 import { generateRefreshToken } from '../config/refreshToken.js';
 import jwt from 'jsonwebtoken';
+import Token from '../models/userToken.model.js';
 
 // register user
 export const userRegister = asyncHandler(async (req, res) => {
@@ -201,6 +203,82 @@ export const deleteUser = asyncHandler(async (req, res) => {
   }
   return res.json({
     message: 'User deleted successfully',
+    status: 200,
+    success: true,
+  });
+})
+
+// forget password request
+export const userReqPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  let config = {
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  }
+  let transporter = nodemailer.createTransport(config);
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new Error('User not found!');
+  }
+
+  let token = await Token.findOne({userId: user._id});
+  if(token) {
+    res.status(400).json({
+      message: 'Password reset request already sent!',
+      status: 400,
+      success: false,
+    })
+  }
+  if(!token){
+    token = new Token({
+      userId: user._id,
+      token: generateReqToken(),
+    });
+    await token.save();
+  }
+  const resetToken = `${process.env.BASE_URL}/api/v1/users/reset-password/${user._id}/${token.token}`;
+  console.log(resetToken);
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Password Reset Request",
+    html: `
+      <h1>Password Reset Request</h1>
+      <p>Click on the link below to reset your password:</p>
+      <a href="${resetToken}">Reset Password</a>
+    `
+  });
+  res.json({
+    message: 'Password reset request sent successfully',
+    status: 200,
+    success: true,
+  });
+});
+
+// update forget password
+export const updatePassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+  const resetPassword = await Token.findOne({ token });
+  if (!resetPassword) {
+    throw new Error('Invalid or expired token!');
+  }
+  const user = await User.findById({_id: resetPassword.userId}); 
+  if(!user) {
+    throw new Error('User not found!');
+  }
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  user.password = hashedPassword;
+  await user.save();
+  await resetPassword.deleteOne();
+  res.json({
+    message: 'Password updated successfully',
     status: 200,
     success: true,
   });
