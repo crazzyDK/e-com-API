@@ -283,3 +283,21 @@ export const updatePassword = asyncHandler(async (req, res) => {
     success: true,
   });
 })
+
+// change password
+export const changePassword = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { password } = req.body;
+  validatemongoID(_id);
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  const user = await User.findById(_id);
+  if (password) {
+    user.password = hashedPassword;
+    await user.save();
+    res.json({
+      message: 'Password updated successfully',
+      status: 200,
+      success: true,
+    });
+  }
+});
