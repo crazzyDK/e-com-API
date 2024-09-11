@@ -7,6 +7,8 @@ import { validatemongoID } from '../utils/validatemongoID.js';
 import { generateRefreshToken } from '../config/refreshToken.js';
 import jwt from 'jsonwebtoken';
 import Token from '../models/userToken.model.js';
+import OTP from '../models/OTP.model.js';
+import { generateOTP } from '../utils/generateOTP.js';
 
 // register user
 export const userRegister = asyncHandler(async (req, res) => {
@@ -208,7 +210,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
   });
 })
 
-// forget password request
+// forget password request mail
 export const userReqPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
@@ -301,3 +303,79 @@ export const changePassword = asyncHandler(async (req, res) => {
     });
   }
 });
+
+// otp request with mail
+export const OtpRequest = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  let config = {
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    },
+    tls: {
+      rejectUnauthorized: false,
+    }
+  }
+  let transporter = nodemailer.createTransport(config);
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new Error('User not found!');
+  }
+
+  let otp = await OTP.findOne({userId: user._id});
+  if(otp) {
+    res.status(400).json({
+      message: 'Please Check your email',
+      status: 400,
+      success: false,
+    })
+  }
+  const number = generateOTP();
+  if(!otp){
+    otp = new OTP({
+      userId: user._id,
+      otp: number,
+    });
+    await otp.save();
+  }
+  const otpToken = `${process.env.BASE_URL}/api/v1/users/OTP/${user._id}`;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "OTP Request",
+    html: `
+      <h1>Your OTP</h1>
+      <p>${number}</p>
+      <p>Click on the link below to verify your OTP:</p>
+      <a href="${otpToken}">Verify OTP</a>
+    `
+  });
+  res.json({
+    message: 'Password reset request sent successfully',
+    status: 200,
+    success: true,
+  });
+
+});
+
+// verify otp
+export const verifyOTP = asyncHandler(async (req, res) => {
+  const { _id } = req.params;
+  const { otp } = req.body;
+
+  const otpData = await OTP.findOne(_id);
+  if (!otpData) {
+    throw new Error('Invalid OTP!');
+  }
+  if(otpData.otp !== otp) {
+    throw new Error('Invalid OTP');
+  }
+  res.json({
+    message: 'OTP verified successfully',
+    status: 200,
+    success: true,
+  });
+  await otpData.deleteOne();
+})

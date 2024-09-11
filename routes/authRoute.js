@@ -1,5 +1,5 @@
 import express from "express";
-import { getUserById, getAllUser, userLogin, userRegister, deleteUser, updateUser, refreshToken, userLogout, userReqPassword, updatePassword, changePassword } from "../controller/User.controller.js";
+import { getUserById, getAllUser, userLogin, userRegister, deleteUser, updateUser, refreshToken, userLogout, userReqPassword, updatePassword, changePassword, OtpRequest, verifyOTP } from "../controller/User.controller.js";
 import { authMiddleware, blockUser, isAdmin, unblockUser } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -17,6 +17,8 @@ router.get('/logout', userLogout);
 router.post('/reset-request-password', userReqPassword);
 router.post('/reset-password/:userId/:token', updatePassword);
 router.put('/change-password', authMiddleware, changePassword);
+router.post('/OTP', OtpRequest);
+router.post('/verify-otp/:id', verifyOTP);
 
 export default router;
 
