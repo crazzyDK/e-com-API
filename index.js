@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import {connectDB} from './config/DB.js';
 import authRouter from './routes/authRoute.js';
 import productRouter from './routes/productRoute.js';
+import blogRouter from './routes/BlogRoute.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import cookieParser from 'cookie-parser';
 
@@ -17,7 +18,7 @@ app.use(cookieParser());
 
 app.use('/api/v1/users', authRouter);
 app.use('/api/v1/products', productRouter);
-
+app.use('/api/v1/blog', blogRouter);
 
 // middleware
 

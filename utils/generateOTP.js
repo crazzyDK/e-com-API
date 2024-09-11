@@ -6,3 +6,8 @@ export const generateOTP = () => {
   }
   return OTP;
 }
+
+// random number
+const otp = () => {
+  return Math.floor(100000 + Math.random() * 900000);
+};
