@@ -29,10 +29,10 @@ const blogSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   }],
-  dislikes: {
+  dislikes: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-  },
+  }],
   image: {
     type: String,
     default: "",

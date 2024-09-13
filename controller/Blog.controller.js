@@ -46,7 +46,7 @@ export const updateBlog = asyncHandler(async (req, res) => {
 
 // getAll blogs
 export const getAllBlog = asyncHandler(async (req, res) =>{
-  const data = await Blog.find();
+  const data = await Blog.find().populate('likes').populate('dislikes');
   res.json({
     message: "Blogs retrieved successfully",
     success: true,
@@ -59,7 +59,9 @@ export const getAllBlog = asyncHandler(async (req, res) =>{
 export const getBlog = asyncHandler(async (req, res) => {
   const { id } = req.params;
   try {
-    const blog = await Blog.findById(id);
+    const blog = await Blog.findById(id)
+      .populate('likes')
+      .populate('dislikes');
     await Blog.findByIdAndUpdate(
       id, 
       { numViews: blog.numViews + 1 },
@@ -157,4 +159,60 @@ export const likeBlog = asyncHandler(async (req, res) => {
     status: 200,
     blog: updatedBlog
   });
+});
+
+// dislike blog
+export const dislikeBlog = asyncHandler(async (req, res) => {
+  const { blogId } = req.body;
+  validatemongoID(blogId);
+  
+  const blog = await Blog.findById(blogId);
+  if (!blog) {
+    return res.status(404).json({
+      message: "Blog not found!",
+      success: false
+    });
+  }
+
+  const loginUserId = req.user._id;
+  const alreadyDisliked = blog.dislikes.includes(loginUserId);
+  const alreadyLiked = blog.likes.includes(loginUserId);
+
+  if (alreadyLiked) {
+    await Blog.findByIdAndUpdate(blogId, {
+      $pull: { likes: loginUserId }
+    });
+  }
+
+  if (alreadyDisliked) {
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      { 
+        $pull: { dislikes: loginUserId }, 
+        isDisLiked: false 
+      },
+      { new: true }
+    );
+    return res.json({
+      message: "Blog disliked successfully",
+      success: true,
+      status: 200,
+      blog: updatedBlog 
+    });
+  } else {
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      { 
+        $push: { dislikes: loginUserId }, 
+        isDisLiked: true 
+      },
+      { new: true }
+    );
+    res.json({ 
+      message: "Blog liked successfully",
+      success: true,
+      status: 200,
+      blog: updatedBlog 
+    });
+  }
 });
