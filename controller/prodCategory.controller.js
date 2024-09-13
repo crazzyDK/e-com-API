@@ -60,3 +60,40 @@ export const deleteCategory = asyncHandler(async (req, res) => {
     throw new Error(error);
   } 
 });
+
+// get Category by id
+export const getCategory = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  try {
+    const category = await ProdCategory.findById(id);
+    if (!category) {
+      throw new Error("Category not found!");
+    }
+    res.json({
+      message: "Category retrieved successfully",
+      success: true,
+      status: 200,
+      category,
+    })
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
+// get all categories
+export const getAllCategory = asyncHandler(async (req, res) => {
+  try {
+    const categories = await ProdCategory.find({});
+    if (!categories) {
+      throw new Error("No categories found!");
+    }
+    res.json({
+      message: "Categories retrieved successfully",
+      success: true,
+      status: 200,
+      categories,
+    })
+  } catch (error) {
+    throw new Error(error);
+  }  
+});
