@@ -6,7 +6,8 @@ import authRouter from './routes/authRoute.js';
 import productRouter from './routes/productRoute.js';
 import blogRouter from './routes/BlogRoute.js';
 import categoryRouter from './routes/prodcategoryRoute.js';
-import bcategoryRouter from './routes/blogcategoryRoute.js'
+import bcategoryRouter from './routes/blogcategoryRoute.js';
+import BrandRouter from './routes/brandRoute.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import cookieParser from 'cookie-parser';
 
@@ -23,8 +24,9 @@ app.use('/api/v1/products', productRouter);
 app.use('/api/v1/blog', blogRouter);
 app.use('/api/v1/category', categoryRouter);
 app.use('/api/v1/blog-category', bcategoryRouter);
-// middleware
+app.use('/api/v1/brand', BrandRouter);
 
+// middleware
 app.use(notFound);
 app.use(errorHandler);
 const port = process.env.PORT || 8000;
