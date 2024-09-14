@@ -1,4 +1,5 @@
 import Product from '../models/product.model.js';
+import User from '../models/User.model.js';
 import asyncHandler from 'express-async-handler';
 import slugify from 'slugify';
 
@@ -151,5 +152,100 @@ export const deleteProduct = asyncHandler(async (req, res) => {
     }); 
   } catch (error) {
     throw new Error("Delete failed!");
+  }
+});
+
+// add wishlist
+export const addWishlist = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { prodId } = req.body;
+  try {
+    const user =  await User.findById(_id);
+    const alredyAdded = user.wishlist.find((id) => id.toString() === prodId)
+    if(alredyAdded) {
+      let user = await User.findByIdAndUpdate(
+        _id,
+        { $pull: { wishlist: prodId } },
+        { new: true }
+      )
+      return res.json({
+        message: 'Product removed from wishlist successfully',
+        status: 200,
+        success: true,
+        user
+      })
+    } else {
+      let user = await User.findByIdAndUpdate(
+        _id,
+        { $push: { wishlist: prodId } },
+        { new: true }
+      )
+      return res.json({
+        message: 'Product added to wishlist successfully',
+        status: 200,
+        success: true,
+        user
+      })
+    }
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
+// rating
+export const rating = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { prodId, star, comment } = req.body;
+  try {
+    const product =  await Product.findById(prodId);
+    // const postedBy = req.user.postedBy;
+    // console.log(postedBy)
+    const alreadyRated = product.ratings.find((id) => id.postedBy.toString() === _id.toString())
+    if(alreadyRated) {
+      const updateProduct = await Product.updateOne(
+        {
+          ratings: { $elemMatch: alreadyRated },
+        },
+        {
+          $set: { "ratings.$.star": star, "ratings.$.comment": comment },
+        },
+        { new: true }
+      );
+    } else {
+      const rateProduct = await Product.findByIdAndUpdate(
+        prodId,
+        { $push: 
+          { ratings: 
+            { 
+              star, 
+              comment, 
+              postedBy: _id 
+            } 
+          } 
+        },
+        { new: true }
+      )
+    }
+    const getallRating = await Product.findById(prodId);
+    let totalRating = getallRating.ratings.length;
+    console.log(totalRating)
+    let ratingSum = getallRating.ratings
+      .map((item) => item.star)
+      .reduce((prev, curr) => prev + curr, 0);
+    let averageRating = Math.round(ratingSum / totalRating);
+    console.log(averageRating)
+    let finalProduct = await Product.findByIdAndUpdate(
+      prodId,
+      {totalrating: averageRating},
+      { new: true }
+    );
+    res.json({
+      message: 'Product rating updated successfully',
+      status: 200,
+      success: true,
+      product: finalProduct,
+    })
+  } catch (error) {
+    throw new Error(error);
   }
 });
